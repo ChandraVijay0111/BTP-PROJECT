@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Manager</title>
+</head>
+<body>
+  <h2>Set Alert Recipients</h2>
+  <form id="emailForm">
+    <label for="emails">Recipient Emails (comma-separated):</label><br>
+    <input type="text" id="emails" name="emails" style="width: 300px;" required><br><br>
+    <button type="submit">Save Emails</button>
+  </form>
+
+  <p id="message"></p>
+
+  <script>
+    const form = document.getElementById('emailForm');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const emailsRaw = document.getElementById('emails').value;
+      const emails = emailsRaw.split(',').map(e => e.trim()).filter(Boolean);
+
+      const res = await fetch('/save-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails })
+      });
+
+      const result = await res.json();
+      message.textContent = result.message;
+    });
+  </script>
+</body>
+</html>
