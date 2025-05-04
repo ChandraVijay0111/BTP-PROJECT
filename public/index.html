@@ -1,6 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 2rem;
+      margin-top: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      width: 5vw;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: #f1f1f1;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .delete-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background-color: darkred;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Email Dashboard</h2>
+    <input type="email" id="emailInput" placeholder="Enter email address" />
+    <button onclick="addEmail()">Add Email</button>
+    <ul id="emailList"></ul>
+    <button onclick="sendAlert()">Send Alert Email</button>
+  </div>
+
+  <script>
+    async function loadEmails() {
+      const res = await fetch("/emails");
+      const emails = await res.json();
+      const list = document.getElementById("emailList");
+      list.innerHTML = "";
+      emails.forEach(email => {
+        const li = document.createElement("li");
+        li.textContent = email;
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.className = "delete-btn";
+        del.onclick = () => deleteEmail(email);
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    }
+
+    async function addEmail() {
+      const email = document.getElementById("emailInput").value;
+      if (!email) return alert("Please enter an email.");
+      const res = await fetch("/add-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        document.getElementById("emailInput").value = "";
+        loadEmails();
+      } else {
+        const msg = await res.text();
+        alert("Error: " + msg);
+      }
+    }
+
+    async function deleteEmail(email) {
+      const res = await fetch("/emails", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        loadEmails();
+      } else {
+        const msg = await res.text();
+        alert("Error: " + msg);
+      }
+    }
+
+    async function sendAlert() {
+      const res = await fetch("/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: "", text: "" }) // subject/text handled in backend
+      });
+      const msg = await res.text();
+      alert(msg);
+    }
+
+    loadEmails();
+  </script>
+</body>
+</html>
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <title>Email Manager</title>
 </head>
@@ -34,4 +193,4 @@
     });
   </script>
 </body>
-</html>
+</html> -->
