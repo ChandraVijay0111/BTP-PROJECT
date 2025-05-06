@@ -79,45 +79,51 @@ app.delete("/emails", (req, res) => {
 });
 
 app.post("/send-email", (req, res) => {
-    const { subject, text } = req.body;
-    const emails = getStoredEmails(); // Fetch emails from the emails.json file
-  
-    if (emails.length === 0) {
-      return res.status(400).send("No email addresses found.");
-    }
-  
-    // Set up nodemailer transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,  // Use the email from environment variable
-        pass: process.env.EMAIL_PASS,  // Use the app password or your Gmail password
-      },
-    });
-  
-    // Loop through each email and send the email
-    emails.forEach((email) => {
-      const mailOptions = {
-        from: process.env.EMAIL_USER,  // Sender address
-        to: email,                    // Recipient address from emails.json
-        subject: "ALERT MESSAGE FOR BTP",             // Subject from the request
-        text: "this is an auto generated message send for alerting the driver",                   // Text body from the request
-      };
-  
-      // Send email for each recipient
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error("Error sending email to", email, error); // Log the error with email
-          return res.status(500).send("Error sending email to " + email + ": " + error.message); // Handle error
-        }
-        console.log("Email sent to:", email, "Info:", info); // Log info about the sent email
+  // Set defaults if not provided
+  const subject = req.body.subject || "BTP ALERT";
+  const text = req.body.text || "ALERT";
+
+  const emails = getStoredEmails(); // Fetch emails from the emails.json file
+
+  if (emails.length === 0) {
+    return res.status(400).send("No email addresses found.");
+  }
+
+  // Set up nodemailer transporter
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  // Track all email promises
+  const emailPromises = emails.map((email) => {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      text,
+    };
+
+    return transporter.sendMail(mailOptions)
+      .then(info => {
+        console.log(`Email sent to ${email}:`, info.response);
+      })
+      .catch(error => {
+        console.error(`Error sending email to ${email}:`, error);
       });
-    });
-  
-    // Respond with success message
+  });
+
+  // Send response after all emails processed
+  Promise.allSettled(emailPromises).then(() => {
     res.send("Email(s) sent successfully.");
   });
-  
+});
+
+  // === Existing endpoint: /send-email ===
+
 
 // Start the server
 app.listen(port, () => {
